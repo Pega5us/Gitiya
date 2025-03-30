@@ -1,23 +1,14 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
-#[derive(Parser)]
-#[command(name = "gitiya", version = "1.1", about = "A simple version control system")]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Init { args: Vec<String> },
-}
+mod constants;
+mod commands;
+mod cli;
+mod fs_utils;
 
 fn main() {
-    let args = Cli::parse();
+    let args = cli::Cli::parse();
     match args.command {
-        Some(Commands::Init { args }) => cmd_init(args),
+        Some(cli::Commands::Init { path }) => commands::init::cmd_init(path),
         None => println!("No command provided. Run `gitiya --help` for usage.")
     }
 }
-
-fn cmd_init(args: Vec<String>) { println!("Executing init with args: {:?}", args); }
