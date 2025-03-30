@@ -1,47 +1,8 @@
-use crate::constants;
-use crate::fs_utils;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use ini::Ini;
-
-pub struct GitRepository {
-    worktree: PathBuf,
-    gitdirectory: PathBuf,
-    configpath: PathBuf,
-}
-
-impl GitRepository {
-    pub fn new(path: &String, force: bool) -> Result<Self, String> {
-        let worktree = PathBuf::from(path);
-        let gitdirectory = worktree.join(".git");
-
-        if !force && !gitdirectory.is_dir() {
-            return Err("Not a Git repository".to_string());
-        }
-
-        // Read configuration file in .git/config
-        let configpath = gitdirectory.join("config");
-        let mut config = Ini::new();
-        if configpath.exists() {
-             config = Ini::load_from_file(&configpath).map_err(|e| e.to_string())?;
-        } else if !force {
-            return Err("Configuration file missing".to_string());
-        }
-
-       // Check repository format version
-        if let Some(version_str) = config.get_from(Some("core"), "repositoryformatversion") {
-            let version: i64 = version_str.parse().unwrap_or(0);
-            if version != 0 {
-                return Err(format!("Unsupported repositoryformatversion: {}", version));
-            }
-        }
-
-        Ok(Self {
-            worktree,
-            gitdirectory,
-            configpath,
-        })
-    }
-}
+use crate::constants;
+use crate::util::fs_utils;
+use crate::repository::repository::GitRepository;
 
 /// Initializes a new repository at the given path.
 ///
@@ -52,8 +13,8 @@ impl GitRepository {
 /// ```
 /// cmd_init(".");
 /// ```
-pub fn cmd_init(path: String) {
-    match create_repository(&path) {
+pub fn cmd_init(path: &String) {
+    match create_repository(Path::new(&path)) {
         Ok(_) => println!("git repository created successfully!"),
         Err(e) => {
             eprintln!("Error: {}, while initialising git repository", e);
@@ -89,18 +50,18 @@ fn init_repository(repository: &GitRepository) -> Result<(), String> {
     Ok(())
 }
 
-fn create_repository(path: &String) -> Result<(), String> {
+fn create_repository(path: &Path) -> Result<(), String> {
     let repository = GitRepository::new(path, true)?;
 
     // First, we make sure the path either doesn't exist or is an empty dir.
     if repository.worktree.exists() {
         if !repository.worktree.is_dir() {
-            return Err(format!("{} is not a directory", path));
+            return Err(format!("{} is not a directory", path.display()));
         }
         if repository.gitdirectory.exists()
             && !fs_utils::is_directory_empty(repository.gitdirectory.as_path())?
         {
-            return Err(format!("{} is not empty!", path));
+            return Err(format!("{} is not empty!", path.display()));
         }
     } else {
         fs_utils::create_directory(repository.worktree.as_path())?;
