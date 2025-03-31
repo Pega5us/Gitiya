@@ -67,5 +67,5 @@ fn create_repository(path: &Path) -> Result<(), String> {
         fs_utils::create_directory(repository.worktree.as_path())?;
     }
     init_repository(&repository)?;
-    return Ok(());
+    Ok(())
 }

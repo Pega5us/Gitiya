@@ -1,5 +1,9 @@
-use std::fs;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use std::io::{Read};
+use flate2::read::{ZlibDecoder};
+
+use crate::constants::CompressionType;
 
 /// Checks if a directory is empty.
 ///
@@ -63,7 +67,7 @@ pub fn join_paths(base_path: &Path, paths: &[&str]) -> PathBuf {
 /// * `mkdir`  - if true, then computed path will be created if it doesn't exist
 ///
 /// * `Ok(PathBuf)` - The fully constructed path if it exists or was successfully created.
-/// * `Err(String)` - An error message if the path is not a directory, or if it doesn't exist and wasn't created.
+/// * `Err(String)` - An error messsage if the path is not a directory, or if it doesn't exist and wasn't created.
 pub fn join_paths_and_mkdir(base_path: &Path, paths: &[&str], mkdir: bool) -> Result<PathBuf, String> {
     let full_path = join_paths(base_path, paths);
     if full_path.exists() {
@@ -97,4 +101,23 @@ pub fn write_to_file(base_path: &Path, filename: &str, text: &str) -> Result<(),
     let file_path = base_path.join(filename);
     fs::write(&file_path, text)
         .map_err(|e| format!("Failed to write '{}': {}", file_path.display(), e))
+}
+
+
+
+/// Opens a file and returns `File` or an error message
+pub fn open_file(path: &Path) -> Result<File, String> {
+    File::open(path).map_err(|e| format!("Failed to open file '{}': {}", path.display(), e))
+}
+
+pub fn read_and_decompress_file(path: &Path, compression_type: CompressionType) -> Result<String, String> {
+    let file = open_file(path)?;
+    let mut reader: Box<dyn Read> = match compression_type {
+        CompressionType::None => Box::new(file),
+        CompressionType::Zlib => Box::new(ZlibDecoder::new(file)),
+    };
+
+    let mut data = String::new();
+    reader.read_to_string(&mut data).map_err(|e| format!("Failed to read file: {}, error: {}", path.display(), e))?;
+    Ok(data)
 }

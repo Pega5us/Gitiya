@@ -5,6 +5,7 @@ mod commands;
 mod cli;
 mod util;
 mod repository;
+mod objects;
 
 fn main() {
     let args = cli::Cli::parse();
