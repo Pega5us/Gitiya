@@ -1,6 +1,7 @@
 use crate::constants;
 use std::ops::Index;
 
+#[derive(Debug, Clone)]
 pub struct SHA(String);
 
 impl SHA {
@@ -9,6 +10,13 @@ impl SHA {
             return Ok(Self(hex.to_string()));
         }
         return Err(format!("invalid hex: {}, can't init SHA!", hex));
+    }
+    pub fn get_directory(&self) -> &str {
+        &self.0[..2]
+    }
+
+    pub fn get_file(&self) -> &str {
+        &self.0[2..]
     }
 }
 

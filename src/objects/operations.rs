@@ -4,6 +4,12 @@ use crate::objects::object::{GitObject, GitObjectType};
 use crate::repository::repository::GitRepository;
 use crate::util::fs_utils;
 use crate::util::hash::SHA;
+use flate2::Compression;
+use flate2::write::ZlibEncoder;
+use hex;
+use sha1::{Digest, Sha1};
+use std::fs::File;
+use std::io::Write;
 
 fn validate_object(data: &str) -> Result<(), String> {
     let data_bytes = data.as_bytes();
@@ -54,4 +60,30 @@ pub fn object_read(repository: &GitRepository, sha: &SHA) -> Result<Box<dyn GitO
         };
     }
     Err(format!("unable to read object"))
+}
+
+pub fn write_object(object: Box<dyn GitObject>, repository: &GitRepository) -> Result<SHA, String> {
+    let data = object.serialize();
+    let header = format!("{} {}\0", object.format(), data.len());
+
+    let mut hasher = Sha1::new();
+    hasher.update(header.as_bytes());
+    hasher.update(data.as_bytes());
+
+    let result = hasher.finalize();
+
+    let sha = SHA::new(&hex::encode(result)).unwrap();
+    let parent_path = fs_utils::join_paths_and_mkdir(
+        repository.gitdirectory.as_path(),
+        &["objects", sha.get_directory()],
+        true,
+    )?;
+    let file_path = fs_utils::join_paths(parent_path.as_path(), &[sha.get_file()]);
+    if !file_path.exists() {
+        let file = File::create(&file_path).unwrap();
+        let mut encoder = ZlibEncoder::new(file, Compression::default());
+        encoder.write_all(&result).unwrap();
+        encoder.finish().unwrap();
+    }
+    Ok(sha)
 }

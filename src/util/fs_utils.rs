@@ -103,8 +103,6 @@ pub fn write_to_file(base_path: &Path, filename: &str, text: &str) -> Result<(),
         .map_err(|e| format!("Failed to write '{}': {}", file_path.display(), e))
 }
 
-
-
 /// Opens a file and returns `File` or an error message
 pub fn open_file(path: &Path) -> Result<File, String> {
     File::open(path).map_err(|e| format!("Failed to open file '{}': {}", path.display(), e))

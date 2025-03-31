@@ -1,8 +1,9 @@
 pub type ObjectData = String;
-
+pub type FormatType = String;
 pub trait GitObject {
     fn serialize(&self) -> ObjectData;
     fn deserialize(&mut self, data: ObjectData);
+    fn format(&self) -> &str;
 }
 
 
